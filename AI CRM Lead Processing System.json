@@ -1,0 +1,674 @@
+{
+  "name": "AI CRM Lead Processing System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "825f0f59-2391-4005-b85c-694eb4663b14",
+      "name": "Webhook",
+      "webhookId": "c7bb6ba7-94ba-422c-8854-120e4666edb1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de813c1a-4885-445d-ab6d-e9b086c3d1e2",
+              "name": "lead_message",
+              "value": "Hello,  My name is John Smith.  I am the Operations Manager at Swift Logistics.  We have 35 employees.  We are looking to automate customer support, CRM, and invoice processing using AI.  Our estimated budget is around $12,000.  We would like to start next month.  You can contact me at john@example.com.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "0280d31d-f597-48c3-862b-8ffabc8b77ed",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AQ.Ab8RN6LUEy_T0PoKqjB4itVTuypB6nmC2VqPUnK-_faeJqh-7Q"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are an experienced B2B sales qualification assistant.\\n\\nAnalyze the lead message below.\\n\\nExtract the information and estimate how valuable this lead is.\\n\\nRules:\\n- Return ONLY valid JSON.\\n- Do not use markdown.\\n- Budget must be a number.\\n- Employees must be a number.\\n- Lead score must be an integer from 0 to 100.\\n- Priority must be High, Medium, or Low.\\n\\nLead scoring guidelines:\\n- Higher budget increases score.\\n- More employees generally increase score.\\n- Business AI automation requests increase score.\\n- Clear buying intent increases score.\\n\\nReturn exactly:\\n\\n{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"email\\\": \\\"\\\",\\n  \\\"company\\\": \\\"\\\",\\n  \\\"job_title\\\": \\\"\\\",\\n  \\\"employees\\\": 0,\\n  \\\"budget\\\": 0,\\n  \\\"need\\\": \\\"\\\",\\n  \\\"timeline\\\": \\\"\\\",\\n  \\\"priority\\\": \\\"\\\",\\n  \\\"lead_score\\\": 0\\n}\\n\\nLead message:\\n{{$json.lead_message}}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "7c99198b-38e8-4572-8f9e-0b9fd9eaa67f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.candidates[0].content.parts[0].text;\n\nconst lead = JSON.parse(text);\n\nreturn [\n  {\n    json: lead\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "311efd86-6988-48fb-84dc-e9975470d49a",
+      "name": "Parse Lead"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.first().json;\n\nconst errors = [];\n\n// Required fields\nif (!lead.name) {\n  errors.push(\"Missing name\");\n}\n\nif (!lead.email) {\n  errors.push(\"Missing email\");\n}\n\nif (!lead.company) {\n  errors.push(\"Missing company\");\n}\n\nif (!lead.need) {\n  errors.push(\"Missing business need\");\n}\n\n// Email validation\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nif (!emailRegex.test(lead.email)) {\n  errors.push(\"Invalid email address\");\n}\n\n// Budget validation\nif (typeof lead.budget !== \"number\" || lead.budget < 0) {\n  errors.push(\"Invalid budget\");\n}\n\n// Employees validation\nif (typeof lead.employees !== \"number\" || lead.employees < 1) {\n  errors.push(\"Invalid employee count\");\n}\n\n// Lead score validation\nif (\n  typeof lead.lead_score !== \"number\" ||\n  lead.lead_score < 0 ||\n  lead.lead_score > 100\n) {\n  errors.push(\"Invalid lead score\");\n}\n\n// Priority validation\nconst priorities = [\"High\", \"Medium\", \"Low\"];\n\nif (!priorities.includes(lead.priority)) {\n  errors.push(\"Invalid priority\");\n}\n\nreturn [\n  {\n    json: {\n      ...lead,\n      valid: errors.length === 0,\n      errors\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "15864fb9-c12c-440a-beb2-72dfc7b881d0",
+      "name": "Validate Lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b5cd5955-a339-413c-9529-c8ec27b763d1",
+              "leftValue": "={{$json.valid}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "a1c5e7e6-8877-490e-b8fd-784e6fbe9339",
+      "name": "Lead Valid?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.lead_score}}",
+                    "rightValue": 80,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "id": "2600f3cb-127b-46c4-a478-158f5f16fd15"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Priority"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "85a56f90-8aad-4cf7-9f08-93d86245376b",
+                    "leftValue": "={{$json.lead_score}}",
+                    "rightValue": 50,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Medium Priority"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "18c1e8c1-fcc6-441e-a793-95b45bfcb9f9",
+                    "leftValue": "={{$json.lead_score}}",
+                    "rightValue": 50,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low Priority"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -96
+      ],
+      "id": "b4e48065-4801-4792-be6b-0e86cec7d511",
+      "name": "Lead Priority"
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{$json.name}}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{$json.email}}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{$json.company}}"
+            },
+            {
+              "fieldId": "job_title",
+              "fieldValue": "={{$json.job_title}}"
+            },
+            {
+              "fieldId": "employees",
+              "fieldValue": "={{$json.employees}}"
+            },
+            {
+              "fieldId": "budget",
+              "fieldValue": "={{$json.budget}}"
+            },
+            {
+              "fieldId": "need",
+              "fieldValue": "={{$json.need}}"
+            },
+            {
+              "fieldId": "timeline",
+              "fieldValue": "={{$json.timeline}}"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{$json.priority}}"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "={{$json.lead_score}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -256
+      ],
+      "id": "017de870-3ca1-44db-bf0b-e9d628d757f3",
+      "name": "Save Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "en1y77HSvCMUHPbr",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6512127938",
+        "text": "=🔥 New HIGH Priority Lead  👤 Name: {{$json.name}}  🏢 Company: {{$json.company}}  💼 Position: {{$json.job_title}}  📧 Email: {{$json.email}}  👥 Employees: {{$json.employees}}  💰 Budget: ${{$json.budget}}  ⭐ Score: {{$json.lead_score}}  📌 Need: {{$json.need}}  ⏳ Timeline: {{$json.timeline}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1648,
+        -256
+      ],
+      "id": "6ef1f4ce-2df9-46fd-ae5f-fb964f4b1d55",
+      "name": "Send a text message",
+      "webhookId": "d1c5ae48-7399-496d-8d6b-3a64d23b5ca5",
+      "credentials": {
+        "telegramApi": {
+          "id": "7g3qYYDfRywaqiER",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "bbeksultan811@gmail.com",
+        "subject": "=🔥 High Priority Lead - {{$json.company}}",
+        "message": "=<h2>New High Priority Lead</h2>  <p><b>Name:</b> {{$json.name}}</p>  <p><b>Company:</b> {{$json.company}}</p>  <p><b>Job Title:</b> {{$json.job_title}}</p>  <p><b>Email:</b> {{$json.email}}</p>  <p><b>Employees:</b> {{$json.employees}}</p>  <p><b>Budget:</b> ${{$json.budget}}</p>  <p><b>Lead Score:</b> {{$json.lead_score}}</p>  <p><b>Timeline:</b> {{$json.timeline}}</p>  <p><b>Need:</b></p>  <p>{{$json.need}}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1856,
+        -256
+      ],
+      "id": "3bf0d9aa-d0f2-40cf-a3f9-1de8d0fcc3ab",
+      "name": "Send a message",
+      "webhookId": "8c8dab82-c77d-4c6e-a083-971564223dc3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GczTtbnD930Uo9oY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n{\n  success: true,\n  priority: \"High\",\n  lead_score: $json.lead_score,\n  message: \"High priority lead has been saved. Sales team has been notified.\",\n  company: $json.company,\n  contact: $json.name\n}\n}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2080,
+        -256
+      ],
+      "id": "f6352ce5-c698-479e-945b-3eda98df19ff",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{$json.name}}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{$json.email}}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{$json.company}}"
+            },
+            {
+              "fieldId": "job_title",
+              "fieldValue": "={{$json.job_title}}"
+            },
+            {
+              "fieldId": "employees",
+              "fieldValue": "={{$json.employees}}"
+            },
+            {
+              "fieldId": "budget",
+              "fieldValue": "={{$json.budget}}"
+            },
+            {
+              "fieldId": "need",
+              "fieldValue": "={{$json.need}}"
+            },
+            {
+              "fieldId": "timeline",
+              "fieldValue": "={{$json.timeline}}"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{$json.priority}}"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "={{$json.lead_score}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -96
+      ],
+      "id": "824ada17-ce1f-460e-9f11-d4af7561f6fe",
+      "name": "Save Lead1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "en1y77HSvCMUHPbr",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{$json.name}}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{$json.email}}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{$json.company}}"
+            },
+            {
+              "fieldId": "job_title",
+              "fieldValue": "={{$json.job_title}}"
+            },
+            {
+              "fieldId": "employees",
+              "fieldValue": "={{$json.employees}}"
+            },
+            {
+              "fieldId": "budget",
+              "fieldValue": "={{$json.budget}}"
+            },
+            {
+              "fieldId": "need",
+              "fieldValue": "={{$json.need}}"
+            },
+            {
+              "fieldId": "timeline",
+              "fieldValue": "={{$json.timeline}}"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{$json.priority}}"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "={{$json.lead_score}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        96
+      ],
+      "id": "a8f74043-edce-4b7c-8592-cbe265acdb94",
+      "name": "Save Lead2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "en1y77HSvCMUHPbr",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"priority\": \"Medium\",\n  \"lead_score\": {{$json.lead_score}},\n  \"message\": \"Lead saved successfully.\",\n  \"company\": \"{{$json.company}}\",\n  \"contact\": \"{{$json.name}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1664,
+        -96
+      ],
+      "id": "d415e11c-9783-4697-bb32-a3b1c7fc9a4a",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"priority\": \"Low\",\n  \"lead_score\": {{$json.lead_score}},\n  \"message\": \"Lead stored for future follow-up.\",\n  \"company\": \"{{$json.company}}\",\n  \"contact\": \"{{$json.name}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1664,
+        96
+      ],
+      "id": "dd3d41c6-8467-4981-93cb-165dea1235f3",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Parse Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Lead": {
+      "main": [
+        [
+          {
+            "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Valid?": {
+      "main": [
+        [
+          {
+            "node": "Lead Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Priority": {
+      "main": [
+        [
+          {
+            "node": "Save Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "280b35a6-0278-4933-8199-b2e878fe7794",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cc2ce1497fea5ef495c4fc759ceafe1145b1ecced76f0b3cadc9843ca9ce88bd"
+  },
+  "nodeGroups": [],
+  "id": "8XocRaI18FAUF6YS",
+  "tags": []
+}
