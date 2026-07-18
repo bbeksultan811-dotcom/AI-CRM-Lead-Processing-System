@@ -170,25 +170,25 @@ All leads are stored in Supabase for future tracking.
 
 ## Complete Workflow
 
-![Workflow](screenshots/01-workflow4.png)
+![Workflow](screenshots/workflow4.png)
 
 ---
 
 ## Webhook Test
 
-![Webhook](screenshots/02-testrequest.png)
+![Webhook](screenshots/testrequest.png)
 
 ---
 
 ## Supabase Database
 
-![Supabase](screenshots/05-supabase.png)
+![Supabase](screenshots/supabase.png)
 
 ---
 
 ## Telegram Notification
 
-![Telegram](screenshots/06-telegram.png)
+![Telegram](screenshots/telegram.png)
 
 ---
 
